@@ -65,6 +65,7 @@ input bool     Use_VolumeAnalysis = true;       // Use volume analysis
 input bool     Use_WolfeWaves = false;          // Use Wolfe waves
 input bool     Use_MultiTimeframe = true;       // Use multi-timeframe analysis
 input bool     G_Debug = false;                 // Enable debug messages
+input bool     Fast_Tester_Mode = true;         // Speed up Strategy Tester (suppress debug, new-bar-only)
 
 input int      StopLoss_Pips = 100;             // Default stop loss (pips)
 input int      TakeProfit_Pips = 150;          // Take profit in pips (increased from 100 to 150)
@@ -134,6 +135,10 @@ int bars_total;
 datetime last_candle_time; // Last processed candle time
 bool is_backtest = false; // Are we in backtest mode?
 int Min_Candles_For_Analysis = 100; // Minimum number of candles required for analysis
+
+// Strategy tag strings — built each OnTick evaluation and passed into trade comments
+string g_buy_tag = "";   // Comma-separated tags of strategies that confirmed a buy
+string g_sell_tag = "";  // Comma-separated tags of strategies that confirmed a sell
 
 // Forward declarations
 int SafeCheckWolfeWavesBuy(MqlRates &rates[]);
@@ -353,6 +358,10 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void DebugPrint(string message)
 {
+    // Fast tester mode: suppress all debug output in tester/optimization runs
+    if(Fast_Tester_Mode && (MQLInfoInteger(MQL_TESTER) || MQLInfoInteger(MQL_OPTIMIZATION)))
+        return;
+
     // If in backtest or optimization, suppress messages
     if(MQLInfoInteger(MQL_OPTIMIZATION))
         return;
@@ -364,6 +373,17 @@ void DebugPrint(string message)
     // If debug is enabled, display the message
     if(G_Debug)
         Print(message);
+}
+
+//+------------------------------------------------------------------+
+//| Append a strategy short code to a tag list (comma-separated)     |
+//+------------------------------------------------------------------+
+void AppendTag(string &tagList, string tag)
+{
+    if(tagList == "")
+        tagList = tag;
+    else
+        tagList += "," + tag;
 }
 
 //+------------------------------------------------------------------+
@@ -506,6 +526,10 @@ void OnTick()
         trades_this_candle = 0;
         if(G_Debug) DebugPrint(current_candle_time == 0 ? "First execution of EA" : "New candle formed");
     } else {
+        // In Fast_Tester_Mode, only analyse on new bar to reduce computation
+        if(Fast_Tester_Mode && (MQLInfoInteger(MQL_TESTER) || MQLInfoInteger(MQL_OPTIMIZATION)))
+            return;
+
         // Same previous candle - quick check of limits
         if(trades_this_candle >= max_trades_per_candle) {
             // Reached maximum trades in this candle
@@ -607,17 +631,23 @@ void OnTick()
     int buy_confirmations = 0;
     int sell_confirmations = 0;
     
+    // Reset strategy tags for this evaluation
+    g_buy_tag = "";
+    g_sell_tag = "";
+    
     // 1. Check indicators (they are faster)
     if(Use_Indicators) {
         if(potential_buy) {
             bool indicator_buy = SafeCheckIndicatorsBuy(local_rates);
             buy_confirmations += (indicator_buy ? Indicators_Weight : 0);
+            if(indicator_buy) AppendTag(g_buy_tag, "IND");
             if(G_Debug) DebugPrint("Indicator check result for buy: " + (indicator_buy ? "Positive" : "Negative"));
         }
         
         if(potential_sell) {
             bool indicator_sell = SafeCheckIndicatorsShort(local_rates);
             sell_confirmations += (indicator_sell ? Indicators_Weight : 0);
+            if(indicator_sell) AppendTag(g_sell_tag, "IND");
             if(G_Debug) DebugPrint("Indicator check result for sell: " + (indicator_sell ? "Positive" : "Negative"));
         }
     }
@@ -627,12 +657,14 @@ void OnTick()
         if(potential_buy) {
             int candle_buy = CheckCandlePatternsBuy();
             buy_confirmations += candle_buy * CandlePatterns_Weight;
+            if(candle_buy > 0) AppendTag(g_buy_tag, "CP");
             if(G_Debug) DebugPrint("Number of candle confirmations for buy: " + IntegerToString(candle_buy));
         }
         
         if(potential_sell) {
             int candle_sell = CheckCandlePatternsShort();
             sell_confirmations += candle_sell * CandlePatterns_Weight;
+            if(candle_sell > 0) AppendTag(g_sell_tag, "CP");
             if(G_Debug) DebugPrint("Number of candle confirmations for sell: " + IntegerToString(candle_sell));
         }
     }
@@ -648,6 +680,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int pa_buy = CheckPriceActionBuy();
             buy_confirmations += pa_buy * PriceAction_Weight;
+            if(pa_buy > 0) AppendTag(g_buy_tag, "PA");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of price action confirmations for buy: " + IntegerToString(pa_buy));
         }
@@ -655,6 +688,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int pa_sell = CheckPriceActionShort();
             sell_confirmations += pa_sell * PriceAction_Weight;
+            if(pa_sell > 0) AppendTag(g_sell_tag, "PA");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of price action confirmations for sell: " + IntegerToString(pa_sell));
         }
@@ -665,6 +699,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int chart_buy = CheckChartPatternsBuy();
             buy_confirmations += chart_buy * ChartPatterns_Weight;
+            if(chart_buy > 0) AppendTag(g_buy_tag, "CHP");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of chart confirmations for buy: " + IntegerToString(chart_buy));
         }
@@ -672,6 +707,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int chart_sell = CheckChartPatternsShort();
             sell_confirmations += chart_sell * ChartPatterns_Weight;
+            if(chart_sell > 0) AppendTag(g_sell_tag, "CHP");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of chart confirmations for sell: " + IntegerToString(chart_sell));
         }
@@ -682,6 +718,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int sr_buy = CheckSupportResistanceBuy();
             buy_confirmations += sr_buy * SupportResistance_Weight;
+            if(sr_buy > 0) AppendTag(g_buy_tag, "SR");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of S/R confirmations for buy: " + IntegerToString(sr_buy));
         }
@@ -689,6 +726,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int sr_sell = CheckSupportResistanceShort();
             sell_confirmations += sr_sell * SupportResistance_Weight;
+            if(sr_sell > 0) AppendTag(g_sell_tag, "SR");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of S/R confirmations for sell: " + IntegerToString(sr_sell));
         }
@@ -699,6 +737,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int ma_buy = CheckMACrossoverBuy(local_rates);
             buy_confirmations += ma_buy * MACrossover_Weight;
+            if(ma_buy > 0) AppendTag(g_buy_tag, "MA");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of MA crossover confirmations for buy: " + IntegerToString(ma_buy));
         }
@@ -706,6 +745,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int ma_sell = CheckMACrossoverShort(local_rates);
             sell_confirmations += ma_sell * MACrossover_Weight;
+            if(ma_sell > 0) AppendTag(g_sell_tag, "MA");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of MA crossover confirmations for sell: " + IntegerToString(ma_sell));
         }
@@ -718,6 +758,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int divergence_buy = CheckDivergenceBuy(local_rates);
             buy_confirmations += divergence_buy * Divergence_Weight;
+            if(divergence_buy > 0) AppendTag(g_buy_tag, "DIV");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of divergence confirmations for buy: " + IntegerToString(divergence_buy));
         }
@@ -725,6 +766,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int divergence_sell = CheckDivergenceShort(local_rates);
             sell_confirmations += divergence_sell * Divergence_Weight;
+            if(divergence_sell > 0) AppendTag(g_sell_tag, "DIV");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of divergence confirmations for sell: " + IntegerToString(divergence_sell));
         }
@@ -735,12 +777,14 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int harmonic_buy = SafeCheckHarmonicPatternsBuy(local_rates);
             buy_confirmations += harmonic_buy * HarmonicPatterns_Weight;
+            if(harmonic_buy > 0) AppendTag(g_buy_tag, "HARM");
             if(G_Debug) DebugPrint("Number of harmonic confirmations for buy: " + IntegerToString(harmonic_buy));
         }
         
         if(potential_sell && !enough_sell_confirmations) {
             int harmonic_sell = SafeCheckHarmonicPatternsShort(local_rates);
             sell_confirmations += harmonic_sell * HarmonicPatterns_Weight;
+            if(harmonic_sell > 0) AppendTag(g_sell_tag, "HARM");
             if(G_Debug) DebugPrint("Number of harmonic confirmations for sell: " + IntegerToString(harmonic_sell));
         }
     }
@@ -750,6 +794,7 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int va_buy = CheckVolumeAnalysisBuy(local_rates);
             buy_confirmations += va_buy * VolumeAnalysis_Weight;
+            if(va_buy > 0) AppendTag(g_buy_tag, "VOL");
             enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of volume analysis confirmations for buy: " + IntegerToString(va_buy));
         }
@@ -757,6 +802,7 @@ void OnTick()
         if(potential_sell && !enough_sell_confirmations) {
             int va_sell = CheckVolumeAnalysisShort(local_rates);
             sell_confirmations += va_sell * VolumeAnalysis_Weight;
+            if(va_sell > 0) AppendTag(g_sell_tag, "VOL");
             enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of volume analysis confirmations for sell: " + IntegerToString(va_sell));
         }
@@ -767,12 +813,14 @@ void OnTick()
         if(potential_buy && !enough_buy_confirmations) {
             int elliott_buy = SafeCheckElliottWavesBuy(local_rates);
             buy_confirmations += elliott_buy * ElliottWaves_Weight;
+            if(elliott_buy > 0) AppendTag(g_buy_tag, "EW");
             if(G_Debug) DebugPrint("Number of Elliott wave confirmations for buy: " + IntegerToString(elliott_buy));
         }
         
         if(potential_sell && !enough_sell_confirmations) {
             int elliott_sell = SafeCheckElliottWavesShort(local_rates);
             sell_confirmations += elliott_sell * ElliottWaves_Weight;
+            if(elliott_sell > 0) AppendTag(g_sell_tag, "EW");
             if(G_Debug) DebugPrint("Number of Elliott wave confirmations for sell: " + IntegerToString(elliott_sell));
         }
     }
@@ -932,7 +980,7 @@ double CalculatePositionSize(double entryPrice, double stopLoss)
 //+------------------------------------------------------------------+
 //| Open a buy position                                              |
 //+------------------------------------------------------------------+
-void OpenBuyOrder(double lotSize, double entryPrice, double stopLoss, double takeProfit)
+void OpenBuyOrder(double lotSize, double entryPrice, double stopLoss, double takeProfit, string comment)
 {
     DebugPrint("Attempting to open buy position:");
     DebugPrint("Volume: " + DoubleToString(lotSize, 2));
@@ -944,7 +992,7 @@ void OpenBuyOrder(double lotSize, double entryPrice, double stopLoss, double tak
     trade.SetExpertMagicNumber(Magic_Number);
     
     // Open buy position
-    bool result = trade.Buy(lotSize, Symbol(), 0, stopLoss, takeProfit, "GoldTrader Buy");
+    bool result = trade.Buy(lotSize, Symbol(), 0, stopLoss, takeProfit, comment);
     
     if(result) {
         DebugPrint("Buy position opened successfully. Ticket: " + IntegerToString(trade.ResultOrder()));
@@ -957,7 +1005,7 @@ void OpenBuyOrder(double lotSize, double entryPrice, double stopLoss, double tak
 //+------------------------------------------------------------------+
 //| Open a sell position                                             |
 //+------------------------------------------------------------------+
-void OpenSellOrder(double lotSize, double entryPrice, double stopLoss, double takeProfit)
+void OpenSellOrder(double lotSize, double entryPrice, double stopLoss, double takeProfit, string comment)
 {
     DebugPrint("Attempting to open sell position:");
     DebugPrint("Volume: " + DoubleToString(lotSize, 2));
@@ -969,7 +1017,7 @@ void OpenSellOrder(double lotSize, double entryPrice, double stopLoss, double ta
     trade.SetExpertMagicNumber(Magic_Number);
     
     // Open sell position
-    bool result = trade.Sell(lotSize, Symbol(), 0, stopLoss, takeProfit, "GoldTrader Sell");
+    bool result = trade.Sell(lotSize, Symbol(), 0, stopLoss, takeProfit, comment);
     
     if(result) {
         DebugPrint("Sell position opened successfully. Ticket: " + IntegerToString(trade.ResultOrder()));
@@ -1350,8 +1398,11 @@ bool SafeOpenBuyPosition()
     DebugPrint("Take Profit: " + DoubleToString(takeProfit, digits));
     DebugPrint("Lot Size: " + DoubleToString(lotSize, 2));
     
+    // Build trade comment using the buy strategy tag list
+    string buy_comment = "GT|B|" + (g_buy_tag == "" ? "NONE" : g_buy_tag);
+    
     // Open the buy order
-    OpenBuyOrder(lotSize, current_price, stopLoss, takeProfit);
+    OpenBuyOrder(lotSize, current_price, stopLoss, takeProfit, buy_comment);
     
     // Update trade counter
     trades_this_candle++;
@@ -1416,8 +1467,11 @@ bool SafeOpenSellPosition()
     DebugPrint("Take Profit: " + DoubleToString(takeProfit, digits));
     DebugPrint("Lot Size: " + DoubleToString(lotSize, 2));
     
+    // Build trade comment using the sell strategy tag list
+    string sell_comment = "GT|S|" + (g_sell_tag == "" ? "NONE" : g_sell_tag);
+    
     // Open the sell order
-    OpenSellOrder(lotSize, current_price, stopLoss, takeProfit);
+    OpenSellOrder(lotSize, current_price, stopLoss, takeProfit, sell_comment);
     
     // Update trade counter
     trades_this_candle++;
