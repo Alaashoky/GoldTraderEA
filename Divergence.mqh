@@ -13,9 +13,10 @@ extern ENUM_TIMEFRAMES DIV_Timeframe;
 extern int handle_rsi, handle_macd;
 extern double rsi[], macd[], macd_signal[];
 
-// The DebugPrint function must be defined in the main file
+// The DebugPrint and CheckArrayAccess functions must be defined in the main file
 #import "GoldTraderEA.mq5"
    void DebugPrint(string message);
+   bool CheckArrayAccess(int index, int array_size, string function_name);
 #import
 
 //+------------------------------------------------------------------+
@@ -33,11 +34,6 @@ bool CheckArrayAccess(int index, int array_size, string function_name)
     return true;
 }
 */
-
-// Instead, use extern to reference the function from another file
-#import "GoldTraderEA.mq5"
-bool CheckArrayAccess(int index, int array_size, string function_name);
-#import
 
 //+------------------------------------------------------------------+
 //| Check divergences for buy                                         |

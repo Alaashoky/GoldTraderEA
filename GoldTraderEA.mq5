@@ -41,7 +41,7 @@ input double   Max_Lot_Size = 0.3;              // Maximum lot size
 input double   Max_Position_Volume = 1.0;       // Maximum volume of open positions
 input int      Max_Positions = 1;               // Maximum number of open positions
 input int      Max_Simultaneous_Trades = 1;     // Maximum number of simultaneous trades 
-input int      Min_Confirmations = 7;           // Minimum number of confirmations
+input int      Min_Confirmations = 4;           // Minimum number of confirmations
 
 // Declaration of input variables for general parameters
 input string              General_Settings = "---- General Settings ----"; // Main parameters
@@ -52,16 +52,16 @@ input bool                Require_MainTrend_Alignment = true;     // Align trade
 input bool     Use_CandlePatterns = true;       // Use candle patterns
 input bool     Use_ChartPatterns = true;        // Use chart patterns
 input bool     Use_PriceAction = true;          // Use price action
-input bool     Use_ElliottWaves = false;        // Use Elliott waves
+input bool     Use_ElliottWaves = true;         // Use Elliott waves
 input bool     Use_Indicators = true;           // Use indicators
 input bool     Use_Divergence = true;           // Use divergences
 input bool     Use_SupportResistance = true;    // Use support and resistance levels
-input bool     Use_HarmonicPatterns = false;    // Use harmonic patterns
+input bool     Use_HarmonicPatterns = true;     // Use harmonic patterns
 input bool     Use_MACrossover = true;          // Use moving average crossovers
 input bool     Use_PivotPoints = true;          // Use pivot points
 input bool     Use_TimeAnalysis = true;         // Use time analysis
 input bool     Use_VolumeAnalysis = true;       // Use volume analysis
-input bool     Use_WolfeWaves = false;          // Use Wolfe waves
+input bool     Use_WolfeWaves = true;           // Use Wolfe waves
 input bool     Use_MultiTimeframe = true;       // Use multi-timeframe analysis
 input bool     Use_TrendPatterns = true;        // Use trend breakout patterns
 input bool     G_Debug = false;                 // Enable debug messages
@@ -150,6 +150,7 @@ bool SafeOpenBuyPosition();
 bool SafeOpenSellPosition();
 bool GetDebugMode();
 void ResetExternalCandleCache();
+void ResetExternalPatternCache();
 
 // Constants
 #define ERR_ARRAY_INDEX_OUT_OF_RANGE 4002  // Define the error code for array index out of range
@@ -593,19 +594,16 @@ void OnTick()
         potential_sell = !price_above_ma200;
     }
     
-    // Check market tilt to filter out unsuitable trades - only if needed
-    bool tilt_ok = true;
+    // Check market tilt to filter out unsuitable trades - independently for buy and sell
     if(potential_buy) {
-        tilt_ok = CheckTiltFilter(true, local_rates);
-        if(!tilt_ok) {
+        if(!CheckTiltFilter(true, local_rates)) {
             potential_buy = false;
             if(G_Debug) DebugPrint("Buy signal rejected: Market tilt filter");
         }
     }
     
-    if(potential_sell && tilt_ok) { // If tilt has been checked, don't check again
-        tilt_ok = CheckTiltFilter(false, local_rates);
-        if(!tilt_ok) {
+    if(potential_sell) {
+        if(!CheckTiltFilter(false, local_rates)) {
             potential_sell = false;
             if(G_Debug) DebugPrint("Sell signal rejected: Market tilt filter");
         }
@@ -1149,19 +1147,19 @@ bool PrepareHistoricalData()
 //+------------------------------------------------------------------+
 bool UpdateIndicatorsSafe()
 {
-    // Update RSI
-    if(CopyBuffer(handle_rsi, 0, 0, 3, rsi) < 3) {
+    // Update RSI - copy enough data for Divergence strategy
+    if(CopyBuffer(handle_rsi, 0, 0, Min_Candles_For_Analysis, rsi) < 3) {
         DebugPrint("Failed to copy RSI data");
         return false;
     }
     
-    // Update MACD
-    if(CopyBuffer(handle_macd, 0, 0, 3, macd) < 3) {
+    // Update MACD - copy enough data for Divergence strategy
+    if(CopyBuffer(handle_macd, 0, 0, Min_Candles_For_Analysis, macd) < 3) {
         DebugPrint("Failed to copy MACD main line data");
         return false;
     }
     
-    if(CopyBuffer(handle_macd, 1, 0, 3, macd_signal) < 3) {
+    if(CopyBuffer(handle_macd, 1, 0, Min_Candles_For_Analysis, macd_signal) < 3) {
         DebugPrint("Failed to copy MACD signal line data");
         return false;
     }
@@ -1221,8 +1219,8 @@ bool UpdateIndicatorsSafe()
         return false;
     }
     
-    // Update ATR
-    if(CopyBuffer(handle_atr, 0, 0, 3, atr) < 3) {
+    // Update ATR - copy enough data for IsBadTradingDay volatility check
+    if(CopyBuffer(handle_atr, 0, 0, 10, atr) < 3) {
         DebugPrint("Failed to copy ATR data");
         return false;
     }
@@ -1383,8 +1381,8 @@ bool IsBadTradingDay()
     if (is_nfp_day) bad_day_score += 3;
     if (central_bank_day) bad_day_score += 2;
     
-    // If we have more than 3 points in our bad day score, avoid trading
-    bool is_bad_day = (bad_day_score >= 3);
+    // If we have more than 5 points in our bad day score, avoid trading
+    bool is_bad_day = (bad_day_score >= 5);
     
     if (G_Debug && is_bad_day) {
         string reason = "Bad trading day detected (score: " + IntegerToString(bad_day_score) + "):";
@@ -1618,4 +1616,12 @@ bool GetDebugMode()
 void ResetExternalCandleCache()
 {
     // Cache reset is handled internally by CandlePatterns.mqh
+}
+
+//+------------------------------------------------------------------+
+//| Reset external chart pattern cache (no-op, handled internally)   |
+//+------------------------------------------------------------------+
+void ResetExternalPatternCache()
+{
+    // Cache reset is handled internally by ChartPatterns.mqh / ChartPatternsImpl.mqh
 }
