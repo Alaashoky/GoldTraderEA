@@ -8,12 +8,11 @@
 
 // Declare external variables needed
 extern ENUM_TIMEFRAMES TP_Timeframe;
-input bool TP_Debug = false;  // Debug flag for TrendPatterns module (will be set programmatically)
 
 //+------------------------------------------------------------------+
 //| DebugPrint function declared extern from the main file           |
 //+------------------------------------------------------------------+
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
    bool CheckArrayAccess(int index, int array_size, string function_name);
 #import

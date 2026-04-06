@@ -7,7 +7,7 @@
 #property strict
 
 // Declare external variables needed
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
    bool CheckArrayAccess(int index, int array_size, string function_name);
    bool GetDebugMode();

@@ -8,9 +8,8 @@
 extern ENUM_TIMEFRAMES TA_Timeframe;
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
-   int CheckTimeAnalysis(MqlRates &rates[]);
 #import
 
 // Check if current time is within a specified trading session
@@ -333,7 +332,7 @@ int CheckTimeAnalysis(MqlRates &rates[])
     
     // Check array size
     int size = ArraySize(rates);
-    if(size < 100) {
+    if(size < 30) {  // Changed from 100 to 30
         DebugPrint("The rates array for CheckTimeAnalysis is smaller than the required size: " + IntegerToString(size));
         return 0;
     }

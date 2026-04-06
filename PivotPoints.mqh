@@ -431,7 +431,7 @@ extern double daily_s1, daily_s2, daily_s3, daily_r1, daily_r2, daily_r3;
 extern double weekly_s1, weekly_s2, weekly_s3, weekly_r1, weekly_r2, weekly_r3;
 
 // The DebugPrint function should be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 

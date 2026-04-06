@@ -11,7 +11,7 @@ extern ENUM_TIMEFRAMES VA_Timeframe;
 extern int handle_volumes;  // Handle to the volumes indicator
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 

@@ -22,12 +22,12 @@ extern int handle_volumes;
 extern long g_volumes[];
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 
 // The CheckArrayAccess function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
 bool CheckArrayAccess(int index, int array_size, string function_name);
 #import
 
@@ -129,7 +129,7 @@ bool CheckIndicatorsBuy(MqlRates &rates[])
     bool wedge_pattern = false;
     
     // RSI
-    rsi_buy = (rsi[0] > rsi[1] && rsi[1] > rsi[2] && rsi[0] < 70 && rsi[1] < 30);
+    rsi_buy = (rsi[0] > rsi[1] && rsi[0] < 70 && rsi[1] < 35);
     
     // MACD
     macd_buy = (macd[0] > macd_signal[0] && macd[1] < macd_signal[1]);
@@ -205,7 +205,7 @@ bool CheckIndicatorsShort(MqlRates &rates[])
     bool wedge_pattern = false;
     
     // RSI
-    rsi_sell = (rsi[0] < rsi[1] && rsi[1] < rsi[2] && rsi[0] > 30 && rsi[1] > 70);
+    rsi_sell = (rsi[0] < rsi[1] && rsi[0] > 30 && rsi[1] > 65);
     
     // MACD
     macd_sell = (macd[0] < macd_signal[0] && macd[1] > macd_signal[1]);

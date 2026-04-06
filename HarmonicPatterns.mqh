@@ -26,7 +26,7 @@ extern bool is_backtest;
 #define TOLERANCE_LEVEL 0.03 // Tolerance level for pattern detection (3 percent)
 
 // DebugPrint and CheckArrayAccess functions must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
    bool CheckArrayAccess(int index, int array_size, string function_name);
 #import

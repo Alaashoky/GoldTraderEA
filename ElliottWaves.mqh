@@ -10,13 +10,9 @@
 extern ENUM_TIMEFRAMES EW_Timeframe;
 extern bool is_backtest;
 
-// The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+// The DebugPrint and CheckArrayAccess functions must be defined in the main file
+#import "GoldTraderEA.mq5"
 void DebugPrint(string message);
-#import
-
-// The CheckArrayAccess function must be defined in the main file
-#import "Divergence.mqh"
 bool CheckArrayAccess(int index, int array_size, string function_name);
 #import
 
