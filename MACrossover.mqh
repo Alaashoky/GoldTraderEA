@@ -7,7 +7,7 @@
 #property strict
 
 // Adding import to use G_Debug variable
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
     void DebugPrint(string message);
     bool GetDebugMode();
 #import
@@ -30,7 +30,7 @@ ENUM_MA_METHOD DefaultMAtype = MODE_EMA;
 ENUM_APPLIED_PRICE DefaultMAappliedPrice = PRICE_CLOSE;
 
 // Remove circular reference
-// #import "GoldTraderEA_cleaned.mq5"
+// #import "GoldTraderEA.mq5"
 //    void DebugPrint(string message);
 // #import
 
@@ -82,6 +82,9 @@ int CheckMACrossoverBuy(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_fast, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving fast moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         fastMA[i] = temp_buf[0];
@@ -92,6 +95,9 @@ int CheckMACrossoverBuy(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_slow, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving slow moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         slowMA[i] = temp_buf[0];
@@ -102,6 +108,9 @@ int CheckMACrossoverBuy(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_long, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving long-term moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         longMA[i] = temp_buf[0];
@@ -127,6 +136,9 @@ int CheckMACrossoverBuy(MqlRates &rates[])
         if(GetDebugMode()) DebugPrint("Slope of the fast moving average is upward");
     }
     
+    IndicatorRelease(handle_fast);
+    IndicatorRelease(handle_slow);
+    IndicatorRelease(handle_long);
     return confirmations;
 }
 
@@ -158,6 +170,9 @@ int CheckMACrossoverShort(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_fast, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving fast moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         fastMA[i] = temp_buf[0];
@@ -168,6 +183,9 @@ int CheckMACrossoverShort(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_slow, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving slow moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         slowMA[i] = temp_buf[0];
@@ -178,6 +196,9 @@ int CheckMACrossoverShort(MqlRates &rates[])
         double temp_buf[1];
         if(CopyBuffer(handle_long, 0, i, 1, temp_buf) <= 0) {
             if(GetDebugMode()) DebugPrint("Error retrieving long-term moving average values");
+            IndicatorRelease(handle_fast);
+            IndicatorRelease(handle_slow);
+            IndicatorRelease(handle_long);
             return 0;
         }
         longMA[i] = temp_buf[0];
@@ -203,6 +224,9 @@ int CheckMACrossoverShort(MqlRates &rates[])
         if(GetDebugMode()) DebugPrint("Slope of the fast moving average is downward");
     }
     
+    IndicatorRelease(handle_fast);
+    IndicatorRelease(handle_slow);
+    IndicatorRelease(handle_long);
     return confirmations;
 }
 

@@ -16,7 +16,7 @@ static int s_cp_cached_sell_count = -1;
 static bool s_cp_pattern_cache[10] = {false, false, false, false, false, false, false, false, false, false};
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
 void DebugPrint(string message);
 bool GetDebugMode();
 void ResetExternalCandleCache();

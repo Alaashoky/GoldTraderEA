@@ -11,7 +11,7 @@
 // External timeframe variable
 extern ENUM_TIMEFRAMES CHP_Timeframe;
 
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
 void DebugPrint(string message);
 bool GetDebugMode();
 void ResetExternalPatternCache();

@@ -64,6 +64,7 @@ input bool     Use_TimeAnalysis = true;         // Use time analysis
 input bool     Use_VolumeAnalysis = true;       // Use volume analysis
 input bool     Use_WolfeWaves = false;          // Use Wolfe waves
 input bool     Use_MultiTimeframe = true;       // Use multi-timeframe analysis
+input bool     Use_TrendPatterns = true;        // Use trend breakout patterns
 input bool     G_Debug = false;                 // Enable debug messages
 input bool     Fast_Tester_Mode = true;         // Speed up Strategy Tester (suppress debug, new-bar-only)
 
@@ -93,6 +94,7 @@ input int      TimeAnalysis_Weight = 1;        // Weight of time analysis
 input int      VolumeAnalysis_Weight = 2;      // Weight of volume analysis
 input int      WolfeWaves_Weight = 3;          // Weight of Wolfe waves
 input int      MultiTimeframe_Weight = 2;      // Weight of multi-timeframe analysis
+input int      TrendPatterns_Weight = 2;       // Weight of trend patterns
 
 // Global variables
 CTrade trade;                      // Trading object
@@ -305,7 +307,7 @@ int OnInit()
    if(is_backtest) {
        DebugPrint("Running in backtest mode detected");
        // In backtest mode, reduce the number of required candles
-       Min_Candles_For_Analysis = 20; // Fewer candles for analysis in backtest
+       Min_Candles_For_Analysis = 50; // Fewer candles for analysis in backtest
    } else {
        Min_Candles_For_Analysis = 100; // Standard number of candles for analysis in live mode
    }
@@ -653,7 +655,7 @@ void OnTick()
     }
     
     // If still not enough confirmations, check candle patterns
-    if(Use_CandlePatterns && (potential_buy || potential_sell)) {
+    if(Use_CandlePatterns) {
         if(potential_buy) {
             int candle_buy = CheckCandlePatternsBuy();
             buy_confirmations += candle_buy * CandlePatterns_Weight;
@@ -669,119 +671,101 @@ void OnTick()
         }
     }
     
-    // Quick check - do we have enough confirmations so far?
-    bool enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
-    bool enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
-    
-    // If confirmations are not enough, check the rest of the strategies
-    
     // 3. Price action
-    if(Use_PriceAction && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_PriceAction) {
+        if(potential_buy) {
             int pa_buy = CheckPriceActionBuy();
             buy_confirmations += pa_buy * PriceAction_Weight;
             if(pa_buy > 0) AppendTag(g_buy_tag, "PA");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of price action confirmations for buy: " + IntegerToString(pa_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int pa_sell = CheckPriceActionShort();
             sell_confirmations += pa_sell * PriceAction_Weight;
             if(pa_sell > 0) AppendTag(g_sell_tag, "PA");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of price action confirmations for sell: " + IntegerToString(pa_sell));
         }
     }
     
     // 4. Chart patterns
-    if(Use_ChartPatterns && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_ChartPatterns) {
+        if(potential_buy) {
             int chart_buy = CheckChartPatternsBuy();
             buy_confirmations += chart_buy * ChartPatterns_Weight;
             if(chart_buy > 0) AppendTag(g_buy_tag, "CHP");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of chart confirmations for buy: " + IntegerToString(chart_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int chart_sell = CheckChartPatternsShort();
             sell_confirmations += chart_sell * ChartPatterns_Weight;
             if(chart_sell > 0) AppendTag(g_sell_tag, "CHP");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of chart confirmations for sell: " + IntegerToString(chart_sell));
         }
     }
     
     // 5. Support and resistance levels
-    if(Use_SupportResistance && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_SupportResistance) {
+        if(potential_buy) {
             int sr_buy = CheckSupportResistanceBuy();
             buy_confirmations += sr_buy * SupportResistance_Weight;
             if(sr_buy > 0) AppendTag(g_buy_tag, "SR");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of S/R confirmations for buy: " + IntegerToString(sr_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int sr_sell = CheckSupportResistanceShort();
             sell_confirmations += sr_sell * SupportResistance_Weight;
             if(sr_sell > 0) AppendTag(g_sell_tag, "SR");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of S/R confirmations for sell: " + IntegerToString(sr_sell));
         }
     }
     
     // 6. Moving average crossovers
-    if(Use_MACrossover && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_MACrossover) {
+        if(potential_buy) {
             int ma_buy = CheckMACrossoverBuy(local_rates);
             buy_confirmations += ma_buy * MACrossover_Weight;
             if(ma_buy > 0) AppendTag(g_buy_tag, "MA");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of MA crossover confirmations for buy: " + IntegerToString(ma_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int ma_sell = CheckMACrossoverShort(local_rates);
             sell_confirmations += ma_sell * MACrossover_Weight;
             if(ma_sell > 0) AppendTag(g_sell_tag, "MA");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of MA crossover confirmations for sell: " + IntegerToString(ma_sell));
         }
     }
     
-    // Execute heavier strategies only if needed
-    
     // 7. Divergences
-    if(Use_Divergence && copied >= 30 && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_Divergence && copied >= 30) {
+        if(potential_buy) {
             int divergence_buy = CheckDivergenceBuy(local_rates);
             buy_confirmations += divergence_buy * Divergence_Weight;
             if(divergence_buy > 0) AppendTag(g_buy_tag, "DIV");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of divergence confirmations for buy: " + IntegerToString(divergence_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int divergence_sell = CheckDivergenceShort(local_rates);
             sell_confirmations += divergence_sell * Divergence_Weight;
             if(divergence_sell > 0) AppendTag(g_sell_tag, "DIV");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of divergence confirmations for sell: " + IntegerToString(divergence_sell));
         }
     }
     
     // 8. Harmonic patterns (if enabled)
-    if(Use_HarmonicPatterns && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_HarmonicPatterns) {
+        if(potential_buy) {
             int harmonic_buy = SafeCheckHarmonicPatternsBuy(local_rates);
             buy_confirmations += harmonic_buy * HarmonicPatterns_Weight;
             if(harmonic_buy > 0) AppendTag(g_buy_tag, "HARM");
             if(G_Debug) DebugPrint("Number of harmonic confirmations for buy: " + IntegerToString(harmonic_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int harmonic_sell = SafeCheckHarmonicPatternsShort(local_rates);
             sell_confirmations += harmonic_sell * HarmonicPatterns_Weight;
             if(harmonic_sell > 0) AppendTag(g_sell_tag, "HARM");
@@ -790,38 +774,121 @@ void OnTick()
     }
     
     // Volume analysis (if enabled and volume data is available)
-    if(Use_VolumeAnalysis && volume_data_available && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_VolumeAnalysis && volume_data_available) {
+        if(potential_buy) {
             int va_buy = CheckVolumeAnalysisBuy(local_rates);
             buy_confirmations += va_buy * VolumeAnalysis_Weight;
             if(va_buy > 0) AppendTag(g_buy_tag, "VOL");
-            enough_buy_confirmations = (buy_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of volume analysis confirmations for buy: " + IntegerToString(va_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int va_sell = CheckVolumeAnalysisShort(local_rates);
             sell_confirmations += va_sell * VolumeAnalysis_Weight;
             if(va_sell > 0) AppendTag(g_sell_tag, "VOL");
-            enough_sell_confirmations = (sell_confirmations >= Min_Confirmations);
             if(G_Debug) DebugPrint("Number of volume analysis confirmations for sell: " + IntegerToString(va_sell));
         }
     }
     
     // 9. Elliott waves (if enabled)
-    if(Use_ElliottWaves && copied >= 30 && (!enough_buy_confirmations || !enough_sell_confirmations)) {
-        if(potential_buy && !enough_buy_confirmations) {
+    if(Use_ElliottWaves && copied >= 30) {
+        if(potential_buy) {
             int elliott_buy = SafeCheckElliottWavesBuy(local_rates);
             buy_confirmations += elliott_buy * ElliottWaves_Weight;
             if(elliott_buy > 0) AppendTag(g_buy_tag, "EW");
             if(G_Debug) DebugPrint("Number of Elliott wave confirmations for buy: " + IntegerToString(elliott_buy));
         }
         
-        if(potential_sell && !enough_sell_confirmations) {
+        if(potential_sell) {
             int elliott_sell = SafeCheckElliottWavesShort(local_rates);
             sell_confirmations += elliott_sell * ElliottWaves_Weight;
             if(elliott_sell > 0) AppendTag(g_sell_tag, "EW");
             if(G_Debug) DebugPrint("Number of Elliott wave confirmations for sell: " + IntegerToString(elliott_sell));
+        }
+    }
+    
+    // 10. Wolfe Waves (if enabled)
+    if(Use_WolfeWaves && copied >= 30) {
+        if(potential_buy) {
+            int ww_buy = SafeCheckWolfeWavesBuy(local_rates);
+            buy_confirmations += ww_buy * WolfeWaves_Weight;
+            if(ww_buy > 0) AppendTag(g_buy_tag, "WW");
+            if(G_Debug) DebugPrint("Number of Wolfe wave confirmations for buy: " + IntegerToString(ww_buy));
+        }
+        
+        if(potential_sell) {
+            int ww_sell = SafeCheckWolfeWavesShort(local_rates);
+            sell_confirmations += ww_sell * WolfeWaves_Weight;
+            if(ww_sell > 0) AppendTag(g_sell_tag, "WW");
+            if(G_Debug) DebugPrint("Number of Wolfe wave confirmations for sell: " + IntegerToString(ww_sell));
+        }
+    }
+    
+    // 11. Multi-timeframe analysis
+    if(Use_MultiTimeframe) {
+        if(potential_buy) {
+            int mtf_buy = CheckMultiTimeframeBuy(local_rates);
+            buy_confirmations += mtf_buy * MultiTimeframe_Weight;
+            if(mtf_buy > 0) AppendTag(g_buy_tag, "MTF");
+            if(G_Debug) DebugPrint("Number of multi-timeframe confirmations for buy: " + IntegerToString(mtf_buy));
+        }
+        
+        if(potential_sell) {
+            int mtf_sell = CheckMultiTimeframeShort(local_rates);
+            sell_confirmations += mtf_sell * MultiTimeframe_Weight;
+            if(mtf_sell > 0) AppendTag(g_sell_tag, "MTF");
+            if(G_Debug) DebugPrint("Number of multi-timeframe confirmations for sell: " + IntegerToString(mtf_sell));
+        }
+    }
+    
+    // 12. Pivot points
+    if(Use_PivotPoints) {
+        if(potential_buy) {
+            int pp_buy = CheckPivotPointsBuy(local_rates);
+            buy_confirmations += pp_buy * PivotPoints_Weight;
+            if(pp_buy > 0) AppendTag(g_buy_tag, "PP");
+            if(G_Debug) DebugPrint("Number of pivot point confirmations for buy: " + IntegerToString(pp_buy));
+        }
+        
+        if(potential_sell) {
+            int pp_sell = CheckPivotPointsShort(local_rates);
+            sell_confirmations += pp_sell * PivotPoints_Weight;
+            if(pp_sell > 0) AppendTag(g_sell_tag, "PP");
+            if(G_Debug) DebugPrint("Number of pivot point confirmations for sell: " + IntegerToString(pp_sell));
+        }
+    }
+    
+    // 13. Time analysis
+    if(Use_TimeAnalysis) {
+        if(potential_buy) {
+            int ta_buy = CheckTimeAnalysis(local_rates);
+            buy_confirmations += ta_buy * TimeAnalysis_Weight;
+            if(ta_buy > 0) AppendTag(g_buy_tag, "TA");
+            if(G_Debug) DebugPrint("Number of time analysis confirmations for buy: " + IntegerToString(ta_buy));
+        }
+        
+        if(potential_sell) {
+            int ta_sell = CheckTimeAnalysis(local_rates);
+            sell_confirmations += ta_sell * TimeAnalysis_Weight;
+            if(ta_sell > 0) AppendTag(g_sell_tag, "TA");
+            if(G_Debug) DebugPrint("Number of time analysis confirmations for sell: " + IntegerToString(ta_sell));
+        }
+    }
+    
+    // 14. Trend patterns
+    if(Use_TrendPatterns) {
+        if(potential_buy) {
+            int tr_buy = CheckTrendPatternsBuy(local_rates);
+            buy_confirmations += tr_buy * TrendPatterns_Weight;
+            if(tr_buy > 0) AppendTag(g_buy_tag, "TR");
+            if(G_Debug) DebugPrint("Number of trend pattern confirmations for buy: " + IntegerToString(tr_buy));
+        }
+        
+        if(potential_sell) {
+            int tr_sell = CheckTrendPatternsShort(local_rates);
+            sell_confirmations += tr_sell * TrendPatterns_Weight;
+            if(tr_sell > 0) AppendTag(g_sell_tag, "TR");
+            if(G_Debug) DebugPrint("Number of trend pattern confirmations for sell: " + IntegerToString(tr_sell));
         }
     }
     
@@ -888,8 +955,8 @@ void OnTick()
     // Check opening new position based on confirmations
     
     // Long moving average for determining the main trend
-    double ma_main_trend = iMA(Symbol(), PERIOD_CURRENT, MA_Trend_Period, 0, MODE_SMA, PRICE_CLOSE);
-    double current_close = local_rates[copied-1].close;
+    double ma_main_trend = (ArraySize(ma_200) > 0) ? ma_200[0] : 0;
+    double current_close = local_rates[0].close;
     
     // Now the main decision for trades
     
@@ -1550,4 +1617,12 @@ bool GetDebugMode()
         return false;
     
     return G_Debug;
+}
+
+//+------------------------------------------------------------------+
+//| Reset external candle pattern cache (no-op, handled internally)  |
+//+------------------------------------------------------------------+
+void ResetExternalCandleCache()
+{
+    // Cache reset is handled internally by CandlePatterns.mqh
 }

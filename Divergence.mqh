@@ -14,7 +14,7 @@ extern int handle_rsi, handle_macd;
 extern double rsi[], macd[], macd_signal[];
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 
@@ -35,7 +35,7 @@ bool CheckArrayAccess(int index, int array_size, string function_name)
 */
 
 // Instead, use extern to reference the function from another file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
 bool CheckArrayAccess(int index, int array_size, string function_name);
 #import
 

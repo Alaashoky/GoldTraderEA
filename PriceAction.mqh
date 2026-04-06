@@ -14,7 +14,7 @@
 extern ENUM_TIMEFRAMES PA_Timeframe;
 
 // The DebugPrint function must be defined in the main file
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 

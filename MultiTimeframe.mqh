@@ -10,7 +10,7 @@
 extern ENUM_TIMEFRAMES MTF_Timeframe;
 
 // Include debug print function
-#import "GoldTraderEA_cleaned.mq5"
+#import "GoldTraderEA.mq5"
    void DebugPrint(string message);
 #import
 
@@ -67,6 +67,8 @@ int CheckMultiTimeframeBuy(MqlRates &current_tf_rates[])
             DebugPrint("Error creating MA handle for timeframe " + 
                       EnumToString(higher_timeframes[i]) + 
                       ": " + IntegerToString(GetLastError()));
+            IndicatorRelease(handle_ma_higher_20);
+            IndicatorRelease(handle_ma_higher_50);
             continue;
         }
         
@@ -76,6 +78,8 @@ int CheckMultiTimeframeBuy(MqlRates &current_tf_rates[])
             DebugPrint("Error copying MA data for timeframe " + 
                       EnumToString(higher_timeframes[i]) + 
                       ": " + IntegerToString(GetLastError()));
+            IndicatorRelease(handle_ma_higher_20);
+            IndicatorRelease(handle_ma_higher_50);
             continue;
         }
         
@@ -201,6 +205,8 @@ int CheckMultiTimeframeShort(MqlRates &current_tf_rates[])
             DebugPrint("Error creating MA handle for timeframe " + 
                       EnumToString(higher_timeframes[i]) + 
                       ": " + IntegerToString(GetLastError()));
+            IndicatorRelease(handle_ma_higher_20);
+            IndicatorRelease(handle_ma_higher_50);
             continue;
         }
         
@@ -210,6 +216,8 @@ int CheckMultiTimeframeShort(MqlRates &current_tf_rates[])
             DebugPrint("Error copying MA data for timeframe " + 
                       EnumToString(higher_timeframes[i]) + 
                       ": " + IntegerToString(GetLastError()));
+            IndicatorRelease(handle_ma_higher_20);
+            IndicatorRelease(handle_ma_higher_50);
             continue;
         }
         
