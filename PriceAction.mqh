@@ -7,8 +7,9 @@
 #property strict
 
 // Include required files
-#include "TrendPatterns.mqh"
-#include "CandlePatterns.mqh"
+// Note: TrendPatterns.mqh and CandlePatterns.mqh are already included by the main file
+// #include "TrendPatterns.mqh"
+// #include "CandlePatterns.mqh"
 
 // Declare external variables needed
 extern ENUM_TIMEFRAMES PA_Timeframe;

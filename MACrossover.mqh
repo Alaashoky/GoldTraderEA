@@ -61,7 +61,7 @@ int CheckMACrossoverBuy(MqlRates &rates[])
 {
     // Ensure access to minimum required data
     int size = ArraySize(rates);
-    if(size < LongMAperiod + 10) {
+    if(size < 3) {
         if(GetDebugMode()) 
             DebugPrint("Not enough historical data to check moving average crossover");
         return 0;
@@ -149,7 +149,7 @@ int CheckMACrossoverShort(MqlRates &rates[])
 {
     // Ensure access to minimum required data
     int size = ArraySize(rates);
-    if(size < LongMAperiod + 10) {
+    if(size < 3) {
         if(GetDebugMode()) 
             DebugPrint("Not enough historical data to check moving average crossover");
         return 0;

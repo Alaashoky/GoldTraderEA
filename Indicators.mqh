@@ -21,14 +21,10 @@ extern double ma_50[], ma_200[];
 extern int handle_volumes;
 extern long g_volumes[];
 
-// The DebugPrint function must be defined in the main file
+// The DebugPrint and CheckArrayAccess functions must be defined in the main file
 #import "GoldTraderEA.mq5"
    void DebugPrint(string message);
-#import
-
-// The CheckArrayAccess function must be defined in the main file
-#import "GoldTraderEA.mq5"
-bool CheckArrayAccess(int index, int array_size, string function_name);
+   bool CheckArrayAccess(int index, int array_size, string function_name);
 #import
 
 //+------------------------------------------------------------------+
@@ -255,12 +251,7 @@ bool CheckIndicatorsShort(MqlRates &rates[])
 // These functions are defined in the respective files
 
 // The FindCandlestickPattern function is defined in the CandlePatterns.mqh file
-#import "CandlePatterns.mqh"
-   int FindCandlestickPattern(MqlRates &rates[], int bullish_pattern);
-#import
+// (available via #include in the main EA file — no #import needed for .mqh files)
 
-// The IsBullishWedge and IsBearishWedge functions are defined in the ChartPatterns.mqh file
-#import "ChartPatterns.mqh"
-   bool IsBullishWedge(MqlRates &rates[]);
-   bool IsBearishWedge(MqlRates &rates[]);
-#import 
+// The IsBullishWedge and IsBearishWedge functions are defined in the ChartPatternsImpl.mqh file
+// (available via #include in the main EA file — no #import needed for .mqh files) 

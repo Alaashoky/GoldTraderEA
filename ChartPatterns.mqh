@@ -23,21 +23,8 @@ static bool s_chp_cached_pattern_results[10] = {false, false, false, false, fals
 static int s_chp_cached_buy_count = -1;
 static int s_chp_cached_sell_count = -1;
 
-// Declare pattern detection functions - using #import instead of extern
-#import "ChartPatternsImpl.mqh"
-   bool IsDoubleTop(MqlRates &rates[]);
-   bool IsDoubleBottom(MqlRates &rates[]);
-   bool IsHeadAndShoulders(MqlRates &rates[]);
-   bool IsInverseHeadAndShoulders(MqlRates &rates[]);
-   bool IsBullishFlag(MqlRates &rates[]);
-   bool IsBearishFlag(MqlRates &rates[]);
-   bool IsCupAndHandle(MqlRates &rates[]);
-   bool IsAscendingTriangle(MqlRates &rates[]);
-   bool IsDescendingTriangle(MqlRates &rates[]);
-   bool IsBullishWedge(MqlRates &rates[]);
-   bool IsBearishWedge(MqlRates &rates[]);
-   void ResetPatternCache();
-#import 
+// Pattern detection functions are available via #include "ChartPatternsImpl.mqh" above
+// (no #import needed for .mqh files)
 
 // Define constants for magic numbers
 const int MIN_COPIED_RATES = 50;
